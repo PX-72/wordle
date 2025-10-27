@@ -38,15 +38,15 @@ type GameState = {
 export const useWordleStore = create<GameState, [['zustand/devtools', never], ['zustand/immer', never]]>(
     devtools(
         immer((set) => ({
-            gameStatus: GameStatus.NotStarted,
-            currentWord: '',
+            gameStatus: GameStatus.InProgress,
+            currentWord: 'toast',
             guesses: Array.from({ length: config.GUESSES }, () => Array(config.WORD_LEN).fill({letter: null, status: LetterStatus.Default})),
             currentPosition: [0, 0],
             addLetter: (letter: string) =>
                 set((state: GameState) => {
                     const [row, col] = state.currentPosition;
                     const isLastLetter = col === config.WORD_LEN - 1;
-                    if (isLastLetter || state.guesses[row][col].letter !== null) return;
+                    if (isLastLetter && state.guesses[row][col].letter !== null) return;
                     state.guesses[row][col] = {letter, status: LetterStatus.Default};
                     if (!isLastLetter) state.currentPosition = [row, col + 1];
                 }),
@@ -55,6 +55,12 @@ export const useWordleStore = create<GameState, [['zustand/devtools', never], ['
                     const [row, col] = state.currentPosition;
                     state.guesses[row][col] = {letter: null, status: LetterStatus.Default};
                     if(col > 0) state.currentPosition = [row, col - 1];
+                }),
+            submit: () =>
+                set((state: GameState) => {
+                    const [row, _] = state.currentPosition;
+                    if (state.gameStatus !== GameStatus.InProgress || state.guesses[row].some(x => x.letter === null)) return;
+                    // todo
                 }),
         })),
         { name: 'WordleStore' }

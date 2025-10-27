@@ -12,9 +12,8 @@ function getStyle(status: LetterStatus = LetterStatus.Incorrect) {
         borderColor: COLOURS.unguessed_border,
         backgroundColor: 'transparent',
         color: COLOURS.letter,
-        fontSize: '1.75rem',
-        //fontFamily: 'Poppins, sans-serif',
-        fontWeight: 500
+        fontSize: '1.9rem',
+        fontWeight: 600
     };
 
     switch (status) {
