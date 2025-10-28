@@ -6,6 +6,7 @@ import {KEY_SET} from "./gameConfig.ts";
 function App() {
     const addLetter = useWordleStore(s => s.addLetter);
     const deleteLetter = useWordleStore(s => s.deleteLetter);
+    const submit = useWordleStore(s => s.submit);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -14,7 +15,7 @@ function App() {
             if (key === 'Backspace') {
                 deleteLetter();
             } else if (key === 'Enter') {
-                console.log('Enter pressed');
+                submit();
             } else if (key.length === 1) {
                 const char = key.toUpperCase();
                 if (KEY_SET.has(char)) {
@@ -28,7 +29,7 @@ function App() {
         return () => {
             window.removeEventListener('keyup', handleKeyDown);
         };
-    }, [addLetter, deleteLetter]);
+    }, [addLetter, deleteLetter, submit]);
 
     return (
         <div>
