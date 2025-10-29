@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+:root, :host {
+    --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+    font-synthesis: none;
+    font-family: 'Poppins', sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: #121414;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+#root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+}

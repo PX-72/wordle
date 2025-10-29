@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import {WordList} from "./components/WordList.tsx";
+import GameControl from "./components/GameControl.tsx";
 import {useWordleStore} from "./store/wordleStore.ts";
 import {KEY_SET} from "./gameConfig.ts";
+import Keyboard from "./components/Keyboard.tsx";
 
 function App() {
     const addLetter = useWordleStore(s => s.addLetter);
@@ -33,7 +35,9 @@ function App() {
 
     return (
         <div>
+            <GameControl />
             <WordList/>
+            <Keyboard />
         </div>
     );
 }

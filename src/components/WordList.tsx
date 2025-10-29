@@ -12,8 +12,10 @@ export function WordList() {
         cells.push(...guess.map(((l, r) => <Letter key={`${c}-${r}`} letter={l.letter} status={l.status}/>)));
     }
     return (
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${WORD_LEN}, auto)` }}>
-            {cells}
+        <div className="flex justify-center">
+            <div className="grid gap-1.5 max-w-[400px]" style={{ gridTemplateColumns: `repeat(${WORD_LEN}, auto)` }}>
+                {cells}
+            </div>
         </div>
     );
 }

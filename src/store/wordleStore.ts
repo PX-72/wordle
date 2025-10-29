@@ -1,6 +1,8 @@
 import {create} from 'zustand';
 import { devtools, persist, createJSONStorage, type PersistOptions } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { WORDLE_WORDS } from '../data/wordle_words.js';
+import { ALLOWED_WORDS_SET } from '../data/wordle_allowed_words.js';
 import * as config from '../gameConfig.js';
 
 export type LetterStatus = 0 | 1 | 2 | 3;
@@ -19,7 +21,7 @@ export const GameStatus = {
     Lost: 3
 } as const;
 
-type LetterState = {
+export type LetterState = {
     letter: string | null,
     status: LetterStatus
 }
@@ -32,6 +34,7 @@ type GameState = {
     addLetter: (letter: string) => void,
     deleteLetter: () => void,
     submit: () => void,
+    start: () => void,
 }
 
 type WordlePersist = PersistOptions<GameState, GameState, unknown>;
@@ -46,6 +49,11 @@ const emptyCell = (): LetterState => ({
     status: LetterStatus.Default,
 });
 
+const getEmptyCells = (): GameState['guesses'] =>
+    Array.from({ length: config.GUESSES }, () =>
+        Array.from({ length: config.WORD_LEN }, emptyCell)
+    );
+
 export const useWordleStore = create<
     GameState,
     [
@@ -56,14 +64,20 @@ export const useWordleStore = create<
     devtools(
         persist(
             immer((set) => ({
-                gameStatus: GameStatus.InProgress,
-                currentWord: 'toast',
-                guesses: Array.from({ length: config.GUESSES }, () =>
-                    Array.from({ length: config.WORD_LEN }, emptyCell)
-                ),
+                gameStatus: GameStatus.NotStarted,
+                currentWord: '',
+                guesses: getEmptyCells(),
                 currentRow: 0,
+                start: () =>
+                    set((state: GameState) => {
+                        state.currentWord = WORDLE_WORDS[Math.floor(Math.random() * WORDLE_WORDS.length)];
+                        state.guesses = getEmptyCells();
+                        state.currentRow = 0;
+                        state.gameStatus = GameStatus.InProgress;
+                    }),
                 addLetter: (letter: string) =>
                     set((state: GameState) => {
+                        if (state.gameStatus !== GameStatus.InProgress) return;
                         const row = state.currentRow;
                         for(let i = 0; i < config.WORD_LEN; i++) {
                             if (state.guesses[row][i].letter === null) {
@@ -74,6 +88,7 @@ export const useWordleStore = create<
                     }),
                 deleteLetter: () =>
                     set((state: GameState) => {
+                        if (state.gameStatus !== GameStatus.InProgress) return;
                         const row = state.currentRow;
                         for(let i = config.WORD_LEN - 1; i >= 0; i--) {
                             if (state.guesses[row][i].letter !== null) {
@@ -84,9 +99,13 @@ export const useWordleStore = create<
                     }),
                 submit: () =>
                     set((state: GameState) => {
+                        if (state.gameStatus !== GameStatus.InProgress) return;
                         const row = state.currentRow;
                         const currentRowWord = state.guesses[row];
-                        if (state.gameStatus !== GameStatus.InProgress || currentRowWord.some(x => x.letter === null)) return;
+                        if (currentRowWord.some(x => x.letter === null)) return;
+
+                        const currentGuessedWord = currentRowWord.map(x => x.letter).join('').toLowerCase();
+                        if (!ALLOWED_WORDS_SET.has(currentGuessedWord)) return;
 
                         // 0. create map with current word letter as key and its indexes in the word as the value
                         const letterMap = new Map<string, number[]>();
@@ -119,7 +138,18 @@ export const useWordleStore = create<
                             c.status = LetterStatus.Incorrect;
                         }
 
-                        if (row < config.GUESSES - 1) state.currentRow = row + 1;
+                        // 4. check result
+                        if (currentRowWord.every(x => x.status === LetterStatus.Correct)) {
+                            state.gameStatus = GameStatus.Won;
+                            return;
+                        }
+
+                        if (row === config.GUESSES - 1) {
+                            state.gameStatus = GameStatus.Lost;
+                            return;
+                        }
+
+                        state.currentRow = row + 1;
                     }),
             })),
             persistOptions

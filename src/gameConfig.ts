@@ -11,7 +11,18 @@ export const COLOURS = Object.freeze({
     correct_bg: '#538D4E'
 });
 
+export const KEYS_ROW_1 = [
+    'Q','W','E','R','T','Y','U','I','O','P',
+];
+
+export const KEYS_ROW_2 = [
+    'A','S','D','F','G','H','J','K','L',
+];
+
+export const KEYS_ROW_3 = [
+    'Z','X','C','V','B','N','M'
+];
+
 export const KEY_SET = new Set<string>([
-    'A','B','C','D','E','F','G','H','I','J','K','L','M',
-    'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+    ...KEYS_ROW_1, ...KEYS_ROW_2, ...KEYS_ROW_3
 ]);
