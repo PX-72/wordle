@@ -57,9 +57,9 @@ function KeyList({
 }) {
     const keyList = keys.map(k => {
         let keyStatus: LetterStatus = LetterStatus.Default;
-        if (wrongLetterSet.has(k)) keyStatus = LetterStatus.Incorrect;
-        else if (correctLetterSet.has(k)) keyStatus = LetterStatus.Correct;
+        if (correctLetterSet.has(k)) keyStatus = LetterStatus.Correct;
         else if (onlyPositionLetterSet.has(k)) keyStatus = LetterStatus.OnlyPositionCorrect;
+        else if (wrongLetterSet.has(k)) keyStatus = LetterStatus.Incorrect;
 
         return <Key key={k} letter={k} status={keyStatus} action={() => addLetter(k)} />;
     });
