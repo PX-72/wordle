@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import { devtools, persist, createJSONStorage, type PersistOptions } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage, type PersistOptions, type StateStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { WORDLE_WORDS } from '../data/wordle_words.js';
 import { ALLOWED_WORDS_SET } from '../data/wordle_allowed_words.js';
@@ -37,11 +37,24 @@ type GameState = {
     start: () => void,
 }
 
-type WordlePersist = PersistOptions<GameState, GameState, unknown>;
+type WordlePersist = PersistOptions<GameState, GameState>;
+
+const base64Storage: StateStorage = {
+    getItem: (name) => {
+        const raw = localStorage.getItem(name);
+        return raw ? atob(raw) : null;
+    },
+    setItem: (name, value) => {
+        localStorage.setItem(name, btoa(value));
+    },
+    removeItem: (name) => {
+        localStorage.removeItem(name);
+    },
+};
 
 const persistOptions: WordlePersist = {
-    name: 'wordle-store',
-    storage: createJSONStorage(() => localStorage),
+    name: 'wordle-store-v2',
+    storage: createJSONStorage(() => base64Storage),
 };
 
 const emptyCell = (): LetterState => ({
