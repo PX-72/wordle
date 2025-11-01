@@ -8,7 +8,8 @@ export const COLOURS = Object.freeze({
     unguessed_border: '#978c7c',
     incorrect_bg: '#373D3F',
     only_position_correct_bg: '#B59F3B',
-    correct_bg: '#538D4E'
+    correct_bg: '#538D4E',
+    toast_bg: '#252626'
 });
 
 export const KEYS_ROW_1 = [
