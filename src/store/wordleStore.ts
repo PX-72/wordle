@@ -15,7 +15,7 @@ export const LetterStatus = {
 
 export type GameStatus = 0 | 1 | 2 | 3;
 export const GameStatus = {
-    NotStarted: 0,
+    NotPlayedYet: 0, // never played the game
     InProgress: 1,
     Won: 2,
     Lost: 3
@@ -23,11 +23,12 @@ export const GameStatus = {
 
 export type LetterState = {
     letter: string | null,
-    status: LetterStatus
+    status: LetterStatus,
 }
 
 type GameState = {
     gameStatus: GameStatus,
+    toastMessage: string | null,
     currentWord: string,
     guesses: Array<Array<LetterState>>,
     currentRow: number,
@@ -35,6 +36,7 @@ type GameState = {
     deleteLetter: () => void,
     submit: () => void,
     start: () => void,
+    setToastMessage: (message: string | null) => void,
 }
 
 type WordlePersist = PersistOptions<GameState, GameState>;
@@ -59,7 +61,7 @@ const persistOptions: WordlePersist = {
 
 const emptyCell = (): LetterState => ({
     letter: null,
-    status: LetterStatus.Default,
+    status: LetterStatus.Default
 });
 
 const getEmptyCells = (): GameState['guesses'] =>
@@ -77,7 +79,8 @@ export const useWordleStore = create<
     devtools(
         persist(
             immer((set) => ({
-                gameStatus: GameStatus.NotStarted,
+                gameStatus: GameStatus.NotPlayedYet,
+                toastMessage: null,
                 currentWord: '',
                 guesses: getEmptyCells(),
                 currentRow: 0,
@@ -115,10 +118,16 @@ export const useWordleStore = create<
                         if (state.gameStatus !== GameStatus.InProgress) return;
                         const row = state.currentRow;
                         const currentRowWord = state.guesses[row];
-                        if (currentRowWord.some(x => x.letter === null)) return;
+                        if (currentRowWord.some(x => x.letter === null)) {
+                            state.toastMessage = 'Not enough letters';
+                            return;
+                        }
 
                         const currentGuessedWord = currentRowWord.map(x => x.letter).join('').toLowerCase();
-                        if (!ALLOWED_WORDS_SET.has(currentGuessedWord)) return;
+                        if (!ALLOWED_WORDS_SET.has(currentGuessedWord)) {
+                            state.toastMessage = 'Not in word list';
+                            return;
+                        }
 
                         // 0. create map with current word letter as key and its indexes in the word as the value
                         const letterMap = new Map<string, number[]>();
@@ -164,6 +173,11 @@ export const useWordleStore = create<
 
                         state.currentRow = row + 1;
                     }),
+                setToastMessage: (message: string | null) => {
+                    set((state: GameState) => {
+                        state.toastMessage = message;
+                    });
+                },
             })),
             persistOptions
         ),

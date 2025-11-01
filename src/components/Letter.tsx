@@ -5,7 +5,7 @@ import {getKeyStyle} from "../utills/keyColourUtils.ts";
 
 type LetterProps = {
     letter: string | null;
-    status: LetterStatus
+    status: LetterStatus;
 }
 
 function getStyle(status: LetterStatus = LetterStatus.Incorrect) {
@@ -23,7 +23,12 @@ function getStyle(status: LetterStatus = LetterStatus.Incorrect) {
 export function Letter({ letter, status = LetterStatus.Incorrect }: LetterProps) {
     const st = getStyle(status);
     return (
-      <div className="flex justify-center items-center border-2 p-4 w-[62px] h-[62px]" style={st} >
+      <div
+          className={
+              `flex justify-center items-center border-2 p-4 w-[62px] h-[62px] 
+              ${letter ? "animate-newLetter" : ""}
+          `}
+           style={st} >
         <span>{letter}</span>
       </div>
     );

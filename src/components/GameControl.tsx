@@ -4,34 +4,29 @@ import * as config from '../gameConfig.js';
 
 export default function GameControl() {
     const [text, setText] = useState('');
-    const [buttonText, setButtonText] = useState('');
-    const [isGameInProgress, setIsGameInProgress] = useState(false);
+    const [isGameInProgress, setIsGameInProgress] = useState(true); // set to true to avoid briefly showing incorrect state
     const gameStatus = useWordleStore(s => s.gameStatus);
     const start = useWordleStore(s => s.start);
 
     useEffect(() => {
-        let t = '';
-        let bt = 'Play another game';
         switch (gameStatus) {
-            case GameStatus.NotStarted:
-                t = 'Welcome!';
-                bt = 'Start';
+            case GameStatus.NotPlayedYet:
+                start();
                 break;
             case GameStatus.Lost:
-                t = 'Maybe next time.';
+                setText('Maybe next time.');
+                setIsGameInProgress(false);
                 break;
             case GameStatus.Won:
-                t = 'Well done!';
+                setText('Well done!');
+                setIsGameInProgress(false);
                 break;
             case GameStatus.InProgress:
-                t = 'Word is set. Go for it!';
+                setText('Word is set. Good luck!');
+                setIsGameInProgress(true);
                 break;
         }
-
-        setText(t);
-        setButtonText(bt);
-        setIsGameInProgress(gameStatus === GameStatus.InProgress);
-    }, [gameStatus]);
+    }, [gameStatus, start]);
 
     return (
         <div className="flex flex-col items-center justify-center">
@@ -43,7 +38,7 @@ export default function GameControl() {
                 style={{ color: config.COLOURS.letter, background: config.COLOURS.correct_bg }}
                 onClick={() => start()}
             >
-                {buttonText}
+                Play another game
             </button>
         </div>
     );
