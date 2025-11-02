@@ -1,15 +1,18 @@
 import {LetterStatus} from "../store/wordleStore.ts";
 import {COLOURS} from "../gameConfig.ts";
-import * as React from "react";
-import {getKeyStyle} from "../utills/keyColourUtils.ts";
+import {getKeyStyle} from "../utils/keyColourUtils.ts";
+import type {CSSProperties} from "react";
+import {useAnimRef} from "../services/useAnimRef.ts";
 
 type LetterProps = {
+    id: string;
     letter: string | null;
     status: LetterStatus;
+    row: number; // row this Letter instance belong to
 }
 
 function getStyle(status: LetterStatus = LetterStatus.Incorrect) {
-    const base: React.CSSProperties = {
+    const base: CSSProperties = {
         borderColor: COLOURS.unguessed_border,
         backgroundColor: 'transparent',
         color: COLOURS.letter,
@@ -20,15 +23,16 @@ function getStyle(status: LetterStatus = LetterStatus.Incorrect) {
     return getKeyStyle(base, status);
 }
 
-export function Letter({ letter, status = LetterStatus.Incorrect }: LetterProps) {
+export function Letter({ id, letter, row, status = LetterStatus.Incorrect }: LetterProps) {
+    const ref = useAnimRef(id);
     const st = getStyle(status);
     return (
-      <div
-          className={
-              `flex justify-center items-center border-2 p-4 w-[62px] h-[62px] 
-              ${letter ? "animate-newLetter" : ""}
-          `}
-           style={st} >
+      <div className={'flex justify-center items-center border-2 p-4 w-[62px] h-[62px]'}
+           style={st}
+           data-id={id}
+           data-row={row}
+           ref={ref}
+      >
         <span>{letter}</span>
       </div>
     );

@@ -1,7 +1,7 @@
 import {LetterStatus, useWordleStore} from "../store/wordleStore.ts";
 import * as React from "react";
 import {COLOURS, KEYS_ROW_1, KEYS_ROW_2, KEYS_ROW_3} from "../gameConfig.ts";
-import {getKeyStyle} from "../utills/keyColourUtils.ts";
+import {getKeyStyle} from "../utils/keyColourUtils.ts";
 
 function Key({
      letter,
