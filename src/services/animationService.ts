@@ -38,41 +38,44 @@ export function pop(id: string, opts?: Partial<KeyframeAnimationOptions>): void 
     el.animate(
         [
             { transform: 'scale(1)' },
-            { transform: 'scale(1.1)' },
+            { transform: 'scale(1.2)' },
             { transform: 'scale(1)' }
         ],
-        { duration: 120, easing: 'ease-out', ...opts }
+        { duration: 60, ...opts }
     );
 }
 
-export async function flip(id: string, opts?: Partial<KeyframeAnimationOptions>): Promise<void> {
+type FlipOpts = Partial<KeyframeAnimationOptions> & { onHalfway?: () => void };
+
+export const DEFAULT_FLIP_DURATION = 800;
+
+export async function flip(id: string, opts?: FlipOpts): Promise<void> {
     const el = elements.get(id);
     if (!el) return;
 
+    const duration = opts?.duration as number ?? DEFAULT_FLIP_DURATION;
+    const delay = opts?.delay ?? 0;
     const frames: Keyframe[] = [
         { transform: 'perspective(700px) rotateX(0deg)',   transformOrigin: '50% 50%' },
         { transform: 'perspective(700px) rotateX(90deg)',  transformOrigin: '50% 50%' },
-        { transform: 'perspective(700px) rotateX(180deg)', transformOrigin: '50% 50%' }
+        { transform: 'perspective(700px) rotateX(0deg)',   transformOrigin: '50% 50%' },
     ];
 
     const anim = el.animate(frames, {
-        duration: 600,
+        duration,
+        delay,
         easing: 'cubic-bezier(.2,.6,.2,1)',
-        ...opts
+        iterations: 1,
+        fill: 'none',
+        ...opts,
     });
 
-    try {
-        await anim.finished;
-    } catch {
-        // finished rejects if unmounted/cancelled — ignore
+    // fire halfway callback at ~90°
+    if (opts?.onHalfway) {
+        try { await anim.ready; } catch {/* */}
+        const t = window.setTimeout(() => { try { opts.onHalfway!(); } catch {/* */} }, delay);
+        anim.finished.finally(() => clearTimeout(t)).catch(() => clearTimeout(t));
     }
-}
 
-export async function flipSequential(idList: string[], opts?: Partial<KeyframeAnimationOptions>, gap = 0): Promise<void> {
-    for (const id of idList) {
-        await flip(id, opts);
-        if (gap > 0) {
-            await new Promise(r => setTimeout(r, gap));
-        }
-    }
+    try { await anim.finished; } catch {/* */}
 }

@@ -27,7 +27,7 @@ export function Letter({ id, letter, row, status = LetterStatus.Incorrect }: Let
     const ref = useAnimRef(id);
     const st = getStyle(status);
     return (
-      <div className={'flex justify-center items-center border-2 p-4 w-[62px] h-[62px]'}
+      <div className={'will-change-transform [transform-style:preserve-3d] flex justify-center items-center border-2 p-4 w-[62px] h-[62px]'}
            style={st}
            data-id={id}
            data-row={row}
