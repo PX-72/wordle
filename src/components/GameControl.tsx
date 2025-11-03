@@ -6,6 +6,7 @@ export default function GameControl() {
     const [text, setText] = useState('');
     const [isGameInProgress, setIsGameInProgress] = useState(true); // set to true to avoid briefly showing incorrect state
     const gameStatus = useWordleStore(s => s.gameStatus);
+    const currentWord = useWordleStore(s => s.currentWord);
     const start = useWordleStore(s => s.start);
 
     useEffect(() => {
@@ -14,7 +15,7 @@ export default function GameControl() {
                 start();
                 break;
             case GameStatus.Lost:
-                setText('Maybe next time.');
+                setText(`The word was: ${currentWord.toUpperCase()}`);
                 setIsGameInProgress(false);
                 break;
             case GameStatus.Won:
@@ -26,7 +27,7 @@ export default function GameControl() {
                 setIsGameInProgress(true);
                 break;
         }
-    }, [gameStatus, start]);
+    }, [gameStatus, currentWord, start]);
 
     return (
         <div className="flex flex-col items-center justify-center">

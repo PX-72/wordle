@@ -4,6 +4,8 @@ import { immer } from 'zustand/middleware/immer';
 import { WORDLE_WORDS } from '../data/wordle_words.js';
 import { ALLOWED_WORDS_SET } from '../data/wordle_allowed_words.js';
 import * as config from '../gameConfig.js';
+import {flip, pop, shakeAll, DEFAULT_FLIP_DURATION} from '../services/animationService.js';
+import {getLetterId, getLetterIdsForRow} from "../utils/idUtils.ts";
 
 export type LetterStatus = 0 | 1 | 2 | 3;
 export const LetterStatus = {
@@ -78,7 +80,7 @@ export const useWordleStore = create<
     ]>(
     devtools(
         persist(
-            immer((set) => ({
+            immer((set, get) => ({
                 gameStatus: GameStatus.NotPlayedYet,
                 toastMessage: null,
                 currentWord: '',
@@ -98,6 +100,7 @@ export const useWordleStore = create<
                         for(let i = 0; i < config.WORD_LEN; i++) {
                             if (state.guesses[row][i].letter === null) {
                                 state.guesses[row][i] = {letter, status: LetterStatus.Default};
+                                pop(getLetterId(row, i));
                                 break;
                             }
                         }
@@ -113,66 +116,86 @@ export const useWordleStore = create<
                             }
                         }
                     }),
-                submit: () =>
-                    set((state: GameState) => {
-                        if (state.gameStatus !== GameStatus.InProgress) return;
-                        const row = state.currentRow;
-                        const currentRowWord = state.guesses[row];
-                        if (currentRowWord.some(x => x.letter === null)) {
-                            state.toastMessage = 'Not enough letters';
-                            return;
-                        }
+                submit: async () => {
+                    const store = get();
+                    if (store.gameStatus !== GameStatus.InProgress) return;
+                    const row = store.currentRow;
+                    const currentRowCopy = store.guesses[row].map(x => ({...x}));
 
-                        const currentGuessedWord = currentRowWord.map(x => x.letter).join('').toLowerCase();
-                        if (!ALLOWED_WORDS_SET.has(currentGuessedWord)) {
-                            state.toastMessage = 'Not in word list';
-                            return;
-                        }
+                    if (currentRowCopy.some(x => x.letter === null)) {
+                        set((s) => { s.toastMessage = 'Not enough letters'; });
+                        shakeAll(getLetterIdsForRow(row));
+                        return;
+                    }
 
-                        // 0. create map with current word letter as key and its indexes in the word as the value
-                        const letterMap = new Map<string, number[]>();
-                        for(let i = 0; i < state.currentWord.length; i++) {
-                            const char = state.currentWord[i];
-                            if (letterMap.has(char)) letterMap.get(char)!.push(i);
-                            else letterMap.set(char, [i]);
+                    const currentGuessedWord = currentRowCopy.map(x => x.letter).join('').toLowerCase();
+                    if (!ALLOWED_WORDS_SET.has(currentGuessedWord)) {
+                        set((s) => { s.toastMessage = 'Not in word list'; });
+                        shakeAll(getLetterIdsForRow(row));
+                        return;
+                    }
+
+                    // 0. create map with current word letter as key and its indexes in the word as the value
+                    const letterMap = new Map<string, number[]>();
+                    for(let i = 0; i < store.currentWord.length; i++) {
+                        const char = store.currentWord[i];
+                        if (letterMap.has(char)) letterMap.get(char)!.push(i);
+                        else letterMap.set(char, [i]);
+                    }
+
+                    for(const [char, indexList] of letterMap) {
+                        const usedIndexSet = new Set();
+                        // 1. set correct matches
+                        for(const i of indexList) {
+                            if (currentRowCopy[i].letter!.toUpperCase() === char.toUpperCase()) {
+                                currentRowCopy[i].status = LetterStatus.Correct;
+                                usedIndexSet.add(i);
+                            }
                         }
-                        for(const [char, indexList] of letterMap) {
-                            const usedIndexSet = new Set();
-                            // 1. set correct matches
-                            for(const i of indexList) {
-                                if (currentRowWord[i].letter!.toUpperCase() === char.toUpperCase()) {
-                                    currentRowWord[i].status = LetterStatus.Correct;
+                        // 2. set letters that exist, but in wrong position
+                        for(const i of indexList.filter(x => !usedIndexSet.has(x))) {
+                            for (const c of currentRowCopy.filter(x => x.status === LetterStatus.Default)) {
+                                if (c.letter!.toUpperCase() === char.toUpperCase()) {
+                                    c.status = LetterStatus.OnlyPositionCorrect;
                                     usedIndexSet.add(i);
                                 }
                             }
-                            // 2. set letters that exist, but in wrong position
-                            for(const i of indexList.filter(x => !usedIndexSet.has(x))) {
-                                for (const c of currentRowWord.filter(x => x.status === LetterStatus.Default)) {
-                                    if (c.letter!.toUpperCase() === char.toUpperCase()) {
-                                        c.status = LetterStatus.OnlyPositionCorrect;
-                                        usedIndexSet.add(i);
-                                    }
-                                }
-                            }
                         }
-                        // 3. set the rest to incorrect
-                        for (const c of currentRowWord.filter(x => x.status === LetterStatus.Default)) {
-                            c.status = LetterStatus.Incorrect;
-                        }
+                    }
+                    // 3. set the rest to incorrect
+                    for (const c of currentRowCopy.filter(x => x.status === LetterStatus.Default)) {
+                        c.status = LetterStatus.Incorrect;
+                    }
 
+                    const animPromises: Promise<void>[] = [];
+                    for (let c = 0; c < currentRowCopy.length; c++) {
+                        const id = getLetterId(row, c);
+                        animPromises.push(flip(id, {
+                            delay: c * (DEFAULT_FLIP_DURATION / 2),
+                            onHalfway: () => {
+                                set(s => {
+                                    s.guesses[row][c].status = currentRowCopy[c].status;
+                                });
+                            },
+                        }));
+                    }
+
+                    await Promise.all(animPromises);
+
+                    set((state: GameState) => {
                         // 4. check result
-                        if (currentRowWord.every(x => x.status === LetterStatus.Correct)) {
+                        if (state.guesses[row].every(x => x.status === LetterStatus.Correct)) {
                             state.gameStatus = GameStatus.Won;
                             return;
                         }
-
                         if (row === config.GUESSES - 1) {
                             state.gameStatus = GameStatus.Lost;
                             return;
                         }
 
                         state.currentRow = row + 1;
-                    }),
+                    });
+                },
                 setToastMessage: (message: string | null) => {
                     set((state: GameState) => {
                         state.toastMessage = message;

@@ -2,14 +2,18 @@ import { useWordleStore } from "../store/wordleStore.ts";
 import { WORD_LEN } from "../gameConfig.ts";
 import type {ReactElement} from "react";
 import {Letter} from "./Letter.tsx";
+import {getLetterId} from "../utils/idUtils.ts";
 
 export function WordList() {
     const guesses = useWordleStore(s => s.guesses);
 
     const cells: ReactElement[] = [];
-    for (let c = 0; c < guesses.length; c++){
-        const guess = guesses[c];
-        cells.push(...guess.map(((l, r) => <Letter key={`${c}-${r}`} letter={l.letter} status={l.status}/>)));
+    for (let r = 0; r < guesses.length; r++){
+        const guess = guesses[r];
+        cells.push(...guess.map(((l, c) => {
+            const id = getLetterId(r, c);
+            return <Letter key={id} id={id} letter={l.letter} row={r} status={l.status}/>;
+        })));
     }
     return (
         <div className="flex justify-center">
